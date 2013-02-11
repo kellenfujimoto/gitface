@@ -19,4 +19,12 @@ Concept:
 --- public folder contents stored in cleartext
 ---- read access to all, write access to those in "commenters" group
 -- users share information in the form of plain text files
--
+
+Implimentation:
+- syncing through Git
+-- each user has their own repo
+--- way of subscription?
+---- cloning repo as way to subscribe, with read-only access unless user given permission by owner to write (comment)
+--- authentication keys stored..?
+---- "private" folder
+----- single point of security failure for entire network
