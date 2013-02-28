@@ -9,18 +9,18 @@ Concept:
 --- data encrypted
 ---- key storage?
 --- user's node source of truth
----- each user's posts seaparate repositories
+---- each user's posts separate repositories
 - *nix file system heiarchy and security used to silo information and regulate discussion
 -- private, limited, and public information shareable
 --- private folder contents encrypted with PGP
 ---- read+write access to user, no others
---- limited folder contents encrypted with symetric encryption
+--- limited folder contents encrypted with symmetric encryption
 ---- read+write access to user, "commenters" group
 --- public folder contents stored in cleartext
 ---- read access to all, write access to those in "commenters" group
 -- users share information in the form of plain text files
 
-Implimentation:
+Implementation:
 - syncing through Git
 -- each user has their own repo
 --- way of subscription?
