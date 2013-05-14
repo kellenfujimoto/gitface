@@ -2,17 +2,17 @@ import datetime
 import os
 from os import path
 import sqlite3
- 
-# Constants
-gitDir = path.expanduser(path.normpath("~/gitface"))
- 
+
 # Classes
 # Attempt to remake menu as class
- 
- 
+class Menu(PyListObject):
+    def __init__(self)
+        self.nav = ""
+        self.items = []
+
 # Functions
 def menu():
-    if path.exists(gitDir + "/comm.db") == False:
+    if path.exists("comm.db") == False:
         print "Start a new (b)blog?\n"
     print "Create (n)ew post?\nShow public (t)imeline?\n(q)uit application?\nManage (r)ings?"
     nav = raw_input()
@@ -20,7 +20,7 @@ def menu():
     	print "Sorry, rings aren't implemented yet! Please select a different option."
     	menu()
     elif nav == "b":
-        conn = sqlite3.connect(gitDir + "/comm.db")
+        conn = sqlite3.connect("comm.db")
         c = conn.cursor()
         c.execute("create table stream (ring integer, author text, category text, body text, timestamp real);")
         conn.commit()
@@ -41,38 +41,28 @@ def menu():
         c.close()
         menu()
     elif nav == "t":
-        conn = sqlite3.connect(gitDir + "/comm.db")
+        conn = sqlite3.connect("comm.db")
         c = conn.cursor()
         c.execute("select * from stream order by timestamp desc limit 10;")
         for row in c:
-        print row[4], "<|> By", row[1], "in", row[2],"\n---\n", row[3], "\n"
+            print row[4], "<|> By", row[1], "in", row[2],"\n---\n", row[3], "\n"
         menu()
     elif nav == "q":
 		print "Bye!"
     else:
 		print "Please try again\n"
 		menu()
-	# end main menu function
- 
+		# end main menu function
+
 # ring submenu function
-	
- 
-def touch(directory, file):
-	import os
-	from os import path
- 
-	directory = path.normcase(directory)
-	directory = path.expanduser(directory)
- 
-	while not path.exists(directory):
-		os.makedirs(directory)
-	os.chdir(directory)
-	while path.exists(file) == False:
-		f = open(file, 'w+', 0)
-		f.close()
- 
+
+
+def touch(file):
+	f = open(file, 'w+', 0)
+	f.close()
+
 def selectRing():
-    keyDB = sqlite3.connect(gitDir + "/keys.db")
+    keyDB = sqlite3.connect("keys.db")
     keyDBc = keyDB.cursor()
     keyDBc.execute("select * from keys")
     keyDB.commit()
@@ -85,20 +75,22 @@ def selectRing():
         print "Please select a ring listed above.\n"
         selectRing()
     print "Success!"
- 
+
 ##################################################
 # Begin Program
-touch(gitDir, "comm.db")
-# check if keys.db exists, if not then create it
-if path.exists(gitDir + "/keys.db") == False:
-	touch(gitDir, "keys.db")
-	conn = sqlite3.connect(gitDir + "/keys.db")
+touch("comm.db")
+# check if databases are properly configured, fixes if not
+if path.exists("keys.db") == False:
+	touch("keys.db")
+	conn = sqlite3.connect("keys.db")
 	c = conn.cursor()
 	c.execute("create table keys (ring integer, pub text, description text);")
 	c.execute("insert into keys values (0, '', 'Public, unencrypted posts');")
 	conn.commit()
 	c.close()
- 
+if path.exists("comm.db") == True:
+    conn = sqlite3.connect("comm.db")
+
 print "Which ring do you choose?\n"
 selectRing()
 menu()
