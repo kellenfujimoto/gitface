@@ -3,17 +3,19 @@ import os
 from os import path
 import sqlite3
 
+# Constants
+mainMenuItems = ["Create new post", "Show public timeline
+
 # Classes
 # Attempt to remake menu as class
 class Menu(PyListObject):
+    """Gitface main menu"""
     def __init__(self)
         self.nav = ""
-        self.items = []
 
 # Functions
 def menu():
-    if path.exists("comm.db") == False:
-        print "Start a new (b)blog?\n"
+
     print "Create (n)ew post?\nShow public (t)imeline?\n(q)uit application?\nManage (r)ings?"
     nav = raw_input()
     if nav == "r":
@@ -91,6 +93,10 @@ if path.exists("keys.db") == False:
 if path.exists("comm.db") == True:
     conn = sqlite3.connect("comm.db")
 
+if path.exists("comm.db") == False:
+    print "Start a new (b)blog?\n"
+
 print "Which ring do you choose?\n"
 selectRing()
-menu()
+main = Menu()
+main.append(
