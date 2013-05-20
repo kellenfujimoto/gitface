@@ -1,0 +1,36 @@
+# gitface
+
+Distributed data with a sane interface for everyone.
+
+This project is barely a zygote. Code and actual useful README information will be posted when we've got it.
+
+## Argument
+
+As we put more and more of our personal data on the tubes, we run into more and more privacy issues, and not just from phishers looking for your CC information. Various interests would like to know what you're doing and who you're talking to, even if it's just to figure out how better to sell things to you and your friends.
+
+Now the typical user puts everything in the cloud, or on Facebook in public. Usually, cloud services have a single entity in charge, one who can be subpoenaed.
+
+Instead of trusting your data to some big corporation, why not trust it to encryption? And it's silly to put the data all in one place.
+
+## Ethos
+
+* **Be paranoid.** Encrypt all non-boilerplate data, from post metadata to logs (if there even are any)
+* **Be redundant.**
+
+## Solution:
+
+A distributed network of computers and smart phones, all with bits of your data, encrypted. Like [bittorrent](http://www.bittorrent.com/), where all devices are seeds.
+
+You have a trust network that you create yourself. So you explicitly say I can see your pics, articles, and low security status updates, but I can't see the source code for the game you're working on. And your sister can't see your porn folder.
+
+No one can subpoena your data because no single entity holds it. And no one can snoop it because it's encrypted.
+
+## Inspirations:
+
+What I think about when I think about `gitface`:
+
+* [Segank: A Distributed Mobile Storage System](http://www.cs.princeton.edu/~rywang/papers/fast04/)
+* [Your double-edged cell phone](http://die-less.com/2012/03/01/your-double-edged-cell-phone/)
+* [Tor](https://www.torproject.org/)
+* [bitcoin](http://bitcoin.org/)
+* [git](http://git-scm.com/) for more info about distributed systems.

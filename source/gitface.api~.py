@@ -57,6 +57,7 @@ class Stream(object):
         ):
         self.path = path
         self.gitfaceDB = gitfaceDB
+        self.keyDB = keyDB
         self.pubKey = pubKey
         if self.pubKey == '':
             self.pubKey = RSA.generate(2048)
@@ -67,14 +68,20 @@ class Stream(object):
             os.makedirs(self.path)
         f = open(self.path + self.gitfaceDB, 'w+', 0)
         f.close()
-        dbExec(self.path + self.gitfaceDB,
+        dbExec(self.path + self.name,
                ['create table if not exists stream (ring integer, data text, date real);'
                ,
                'create table if not exists rings (ring integer, priKey text, pubKey text, description text);'
                ])
 
+        # Check if keys database and table exist, create if not
 
-        dbExec(self.path + self.gitfaceDB,
+        f = open(self.path + self.keyDB, 'w+', 0)
+        f.close()
+
+        # Need to generate public and private keys for ring 1
+
+        dbExec(self.path + self.keyDB,
                ['create table if not exists keys (ring text, public text, description text);'
                ,
                "insert into keys values (0, '', 'The public ring; unencrypted and insecure');"
@@ -91,25 +98,13 @@ class Stream(object):
         r = dbExec(self.path + self.name, sql)
         return r
 
-    def printRings(self):
-    	ringList = self.command("select * from keys")
-    	count = 1
-    	for row in ringList:
-			print '(' + str(count) + ') Ring', row[0], ' | ', row[2]
-        	count += 1
-
-class Ring(Stream):
-	def __init__(self, ringLevel):
-		self ring = ringLevel
-
-
 
 class Entry(object):
 
     def __init__(
         self,
         timestamp=datetime.utcnow(),
-        location=gitfaceDir + "gitface.db",
+        location='',
         ring=1,
         ):
         self.location = location  # Where the post lives, aka the absolute path to the stream database
