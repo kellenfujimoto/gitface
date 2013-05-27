@@ -1,50 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# The GitFace module and API
+# Gitface
 
 import os
-import sqlite3
 from Crypto.PublicKey import RSA
-from Crypto.Cipher import Blowfish
 from Crypto.Random import random
+from Crypto.Hash import SHA512
 import scrypt
-from zlib import compress, decompress
-from datetime import datetime
+import getpass
+import re
 
-# Constants
-# Might toss all of these into a configuration file. Once it gets too verbose.
-
-gitfaceDir = os.path.expanduser(os.path.normcase('~/gitface'))  # Protect the Windows users' paths
-
-
-# Convenience functions
-# Connecting to a database and executing something
-
-def dbExec(target, statements):
-
-	# target is the string of the absolte path to the database you want to write to
-	# statements is a list of sql statements (make sure to add the ";" at the end; you aren't in Kansas anymore!)
-
-	conn = sqlite3.connect(target)
-	c = conn.cursor()
-	for command in statements:
-		c.execute(command)
-	conn.commit()
-	c.close()
-	return c  # Make dbExec() work with 'select' statements
-
-
-# Fetxh a key from a database
-
-def keyFetch(keyRing, keyDBPath=gitfaceDir + 'keys.db'):
-
-	# Digs into key database and fetches either public or private key
-
-	ringKey = dbExec(keyDBPath, ['from keys select public where ring is'
-					  + str(keyRing) + ';'])
-	return ringKey
-
+# sqlalchemy imports
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
 
 # Password security functions
 
@@ -64,18 +34,121 @@ def verifyPassword(hashedPassword, guessedPassword, maxTime=0.1):
 	except scrypt.error:
 		return False
 
+# Other functions
 
-# Class definitions
+def touch(file):
+	if os.path.exists(os.path.dirname(file)) == False:
+		os.makedirs(os.path.dirname(file))
+	f = open(file, 'w+', 0)
+	f.close()
 
-class User(object):
+# Constants
+# Might toss all of these into a configuration file. Once it gets too verbose.
+
+gitfaceDir = "/" + os.path.abspath(os.path.expanduser(os.path.normcase('~/gitface')))  # Protect the Windows users' paths
+
+osPassword = getpass.getpass("Password for " + getpass.getuser() + ": ")
+
+
+# sqlalchemy
+engine = create_engine("postgresql+psycopg2://" + os.getlogin() + ":" + osPassword + "@localhost:5432")
+
+Base = declarative_base()
+
+class User(Base):
+	__tablename__ = 'users'
+
+	id = Column(String, primary_key=True)
+	username = Column(String)
+	passhash = Column(String)
+	personalKey = Column(String)
+	sharingKey = Column(String)
+
+	def __init__(self, username, password, personalKey, sharingKey):
+		self.username = username
+		id = SHA512(self.username)
+		self.id = id.hexdigest()
+		self.passhash = hashPassword(password)
+		self.personalKey = [RSA.publickey(RSA.importKey(personalKey)), scrypt.encrypt(RSA.importKey(personalKey), password, maxtime=0.1)]
+		self.sharingKey = RSA.publickey(RSA.importKey(sharingKey))
+
+	def __repr__(self):
+		return "<User('%s','%s','%s','%s')>" % (self.username, self.passhash, personalKey[0], sharingKey[0])
+
+class Entry(Base):
+	__tablename__ = 'stream'
+
+	id = Column(Integer, primary_key=True)
+	ring = Column(Integer)
+# 	user_id = Column(String, ForeignKey('users.id'))
+# 	author = relationship(User, primaryjoin=user_id == User.id)
+	data = Column(String)
+
+	def __init__(self, ring, data):
+		self.ring = ring
+# 		foo = SHA512.new(data=author)
+# 		self.user_id = foo.digest()
+# 		self.author = author
+		self.data = data
+
+	def __repr__(self):
+		return "<Entry('%s','%s')>" % (self.ring, self.data)
+
+Base.metadata.create_all(engine)
+Session = sessionmaker()
+Session.configure(bind=engine)
+session = Session()
+
+class Menu(object):
+
+    """Gitface main menu"""
+
+    def __init__(self, items, description):
+        self.items = items
+        self.description = description
+
+# Begin program
+touch('~/gitface/gitface.db')
+activeUser = 'guest'
+main = Menu(items=["Create (n)ew post?", "Show public (t)imeline?", "(q)uit application?"], description="Welcome to the main menu of GitFace! Please select a navigation option below:\n")
+# main.__dict__[items] = ("Create (n)ew post?", "Show public (t)imeline?", "(q)uit application?")
+# main.__dict__[description] = "Welcome to the main menu of GitFace! Please select a navigation option below:\n"
+
+nav = ''
+
+while nav != 'q':
+	print main.description
+	for x in main.items:
+		print x
+	nav = raw_input('What would you like to do? ')
+	if nav == 'n':
+		if activeUser == 'guest':
+			print 'Warning: the only option for guest users is the unencrypted public ring.\n'
+			body = raw_input("What would you like to say? \n")
+			entry = Entry(0, body)
+			session.add(entry)
+		else:
+			pass # add checking against user, and inserting that into entry object
+	elif nav == 't':
+		for entry in session.query(Entry).order_by(Entry.id):
+			print str(entry.ring) + " | by guest\n---\n" + entry.data
+			# need to support decrypting
+
+
+# Preserved for posterity:
+
+"""class User(object):
 
 	def __init__(self, username='', path=gitfaceDir, password=''):
 		if os.path.exists(path) == False:
 			os.makedirs(path)
 		self.location = path + 'users.db'
-		dbExec(self.location,
-			   'create table if not exists users (username text, salt text, passhash text, share text);'
-			   )
+		try:
+			conn = sqlite3.connect(self.location)
+			c = conn.cursor()
+			c.execute('create table users (username text, salt text, passhash text, share text);')
+		finally:
+			pass
 		if username == '':
 			self.username = raw_input('What is your email address? ')
 		checkData = dbExec(self.location,
@@ -95,15 +168,10 @@ class User(object):
 			x = RSA.generate(2048)
 			self.sharePub = x.publicKey()
 			self.sharePri = scrypt.encrypt(x.export(),password,maxtime=0.1)
-		dbExec(self.location, 'insert into users values (?,?,?,?), '
-			   + self.username + ',' + self.salt.hexdigest + ','
-			   + self.passhash + ','
-			   + self.sharePub + ';')
+		dbExec(self.location, 'insert into users values (?,?,?,?);' (self.username, self.salt.hexdigest, self.passhash, self.sharePub))"""
 
 
-class Stream(object):
-
-	""" Database stream of entries """
+"""class Stream(object):
 
 	def __init__(
 		self,
@@ -192,7 +260,7 @@ class Entry(object):
 		encryptedargs = self.pubKey.encrypt(args, K)
 		dbExec(self.location, 'update stream set data=' + encryptedargs + ' where date=' + self.entryID + ';')
 
-	def read(self, ring, password, id = self.entryID):
-		data = dbExec(self.location, "select * where index=" + str(id) + ";")
+	def read(self, ring, password):
+		data = dbExec(self.location, "select * where index=" + str(self.entryID) + ";")
 		decryptKey = RSA.importKey(scrypt.decrypt(dbExec(gitfaceDir + "keys.db", "select priKey from keys where ring=" + ring + ";"), password, maxtime = 0.1))
-		plaintextData = decryptKey.decrypt(data)
+		plaintextData = decryptKey.decrypt(data)"""

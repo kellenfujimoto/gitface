@@ -6,10 +6,10 @@ import gitface
 # Classes
 # Attempt to remake menu as class
 
-publicKey = \
-    raw_input('Do you have an RSA public key? If so, paste it here. If not, hit return and one will be generated for you. '
-              )
-timeline = gitface.Stream(pubKey=publicKey)
+username = raw_input('What\'s your username? ')
+password = raw_input('What\'s your password? ')
+currentUser = gitface.User(username = username, password = password)
+timeline = gitface.Stream()
 
 
 class Menu(object):
