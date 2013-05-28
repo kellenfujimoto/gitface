@@ -70,7 +70,7 @@ class User(Base):
 		self.id = id.hexdigest()
 		self.passhash = hashPassword(password)
 		self.personalKey = [RSA.publickey(RSA.importKey(personalKey)), scrypt.encrypt(RSA.importKey(personalKey), password, maxtime=0.1)]
-		self.sharingKey = RSA.publickey(RSA.importKey(sharingKey))
+		self.sharingKey = [RSA.publickey(RSA.importKey(sharingKey)), scrypt.encrypt(RSA.importKey(sharingKey), password, maxtime=0.1)]
 
 	def __repr__(self):
 		return "<User('%s','%s','%s','%s')>" % (self.username, self.passhash, personalKey[0], sharingKey[0])
@@ -107,12 +107,47 @@ class Menu(object):
         self.items = items
         self.description = description
 
-# Begin program
+def passwordConfirmation():
+	guess1 = getpass.getpass()
+	guess2 = getpass.getpass("Confirm password: ")
+	if guess1 == guess2:
+		return guess1
+	else:
+		print "Password error. Please try again.\n"
+		passwordConfirmation()
+
+def userVerify():
+	selectedUser = raw_input("Username? ")
+	if selectedUser == "guest":
+		return selectedUser
+	for u in session.query(User.username.filter_by(username=selectedUser):
+		userList.append(u)
+	if len(userList) == 0:
+		action = raw_input("Username not found? Would you like to create a new user called " + activeUser + "?(y/n) ")
+		if action == "y":
+			personalKey = RSA.generate(2048)
+			sharingKey = RSA.generate(2048)
+			newUser = User(selectedUser, passwordConfirmation(), personalKey, sharingKey)
+			session.add(newUser)
+			session.commit()
+		else:
+			userVerify()
+	else:
+		return selectedUser
+
+#################
+# Begin program #
+#################
+
 touch('~/gitface/gitface.db')
-activeUser = 'guest'
+activeUser = userVerify()
+hashedPassword = session.query(User.passhash).filter_by(username=activeUser)
+passwordGuess = getpass.getpass("Password? ")
+
+while not verifyPassword(hashedPassword, passwordGuess, maxtime=0.1):
+	passwordGuess = getpass.getpass("Hm, something went wrong. Try again? ")
+
 main = Menu(items=["Create (n)ew post?", "Show public (t)imeline?", "(q)uit application?"], description="Welcome to the main menu of GitFace! Please select a navigation option below:\n")
-# main.__dict__[items] = ("Create (n)ew post?", "Show public (t)imeline?", "(q)uit application?")
-# main.__dict__[description] = "Welcome to the main menu of GitFace! Please select a navigation option below:\n"
 
 nav = ''
 
@@ -123,16 +158,26 @@ while nav != 'q':
 	nav = raw_input('What would you like to do? ')
 	if nav == 'n':
 		if activeUser == 'guest':
-			print 'Warning: the only option for guest users is the unencrypted public ring.\n'
+			print 'Warning: the only option for guests is the unencrypted public ring.\n'
 			body = raw_input("What would you like to say? \n")
 			entry = Entry(0, body)
 			session.add(entry)
 		else:
 			pass # add checking against user, and inserting that into entry object
 	elif nav == 't':
+		count = 1
 		for entry in session.query(Entry).order_by(Entry.id):
-			print str(entry.ring) + " | by " + entry.author + "\n---\n" + entry.data
+			print str(count) + str(entry.ring) + " | by guest\n" + entry.data + "\n---\n"
+			count += 1
+		entrySelect = raw_input("Press return to go to the main menu, or enter the numeral for the message you'd like to interact with.")
+		if not entrySelect:
+			pass
+		else:
+			print session.query(Entry).order_by(Entry.id)[int(entrySelect) + 1]
+			entryAction = raw_input("
 			# need to support decrypting
+
+	session.commit()
 
 
 # Preserved for posterity:
