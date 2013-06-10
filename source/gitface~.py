@@ -66,9 +66,9 @@ class User(Base):
 	def __init__(self, username, password, keypassphrase, personalKey, sharingKey):
 		self.username = username
 		id = SHA512.new(self.username)
-		self.id = id.hexdigest()
-		passhash = SHA512.new(password + id.hexdigest())
-		self.passhash = passhash.hexdigest()
+		self.id = id.digest()
+		passhash = SHA512.new(password + id.digest())
+		self.passhash = passhash.digest()
 		if personalKey == "new":
 			rawRSA = RSA.generate(2048)
 			self.personalKey = rawRSA.exportKey(passphrase=keypassphrase)
@@ -81,7 +81,7 @@ class User(Base):
 			self.sharingKey = RSA.importKey(passphrase=keypassphrase)
 
 	def __repr__(self):
-		return "<User('%s','%s','%s','%s')>" % (self.username, self.passhash, self.personalKey.hexdigest(), self.sharingKey.hexdigest())
+		return "<User('%s','%s','%s','%s')>" % (self.username, self.passhash, self.personalKey.digest(), self.sharingKey.digest())
 
 class Ring(Base):
 	__tablename__ = 'rings'
@@ -99,7 +99,7 @@ class Ring(Base):
 			self.key = RSA.importKey(passphrase=keypassphrase)
 
 	def __repr__(self):
-		return "<Ring('%s', '%s')>" % (self.ring, self.key.hexdigest())
+		return "<Ring('%s', '%s')>" % (self.ring, self.key.digest())
 
 
 class Entry(Base):
@@ -155,7 +155,7 @@ def userVerify():
 		if action == "y":
 			newpassHash = SHA512.new(passwordConfirmation())
 			newpassphrase = passwordConfirmation("private passphrase: ")
-			newUser = User(selectedUser, newpassHash.hexdigest(), newpassphrase, "new", "new")
+			newUser = User(selectedUser, newpassHash.digest(), newpassphrase, "new", "new")
 			userHash = SHA512.new(selectedUser)
 			session.add(newUser)
 			session.commit()
@@ -177,7 +177,7 @@ for row in session.query(User.passhash).filter(User.username == activeUser):
 	hashedPassword = row[0]
 # hashedPassword = session.query(User.passhash).filter_by(username=activeUser)
 guessHash = SHA512.new(getpass.getpass("Password? "))
-passwordGuess = guessHash.hexdigest()
+passwordGuess = guessHash.digest()
 
 
 while not hashedPassword == passwordGuess:
@@ -203,7 +203,7 @@ while nav != 'q':
 			session.add(entry)
 		else:
 			activeUserHash = SHA512.new(activeUser)
-			for ring in session.query(Entry).filter(username = activeUserHash.hexdigest()):
+			for ring in session.query(Entry).filter(username = activeUserHash.digest()):
 				print ring
 			currentRing = raw_input("\nChoose a ring#: ")
 			ringKey = session.query(Ring.key).filter(ring = currentRing)
